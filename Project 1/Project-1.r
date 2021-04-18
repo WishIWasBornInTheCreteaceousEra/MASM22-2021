@@ -154,9 +154,8 @@ y0
 
 #releveling to "Normal" because it has most candidates
 PositivePlasma$bmicat <- relevel(PositivePlasma$bmicat,"Normal")
-bmimodel_relevel <- lm(betaplasma~bmicat,data=PositivePlasma)
 (
-  bmi.model_relevel <- lm(betaplasma~bmicat, data=PositivePlasma)
+  bmi.model_relevel <- lm(log(betaplasma)~bmicat, data=PositivePlasma)
 )
 summary(bmi.model_relevel)
 (x1 <- data.frame(
@@ -188,7 +187,7 @@ y1
 #Question 2C
 PositivePlasma$sex<-relevel(PositivePlasma$sex, "Female")
 PositivePlasma$smokstat<-relevel(PositivePlasma$smokstat, "Never")
-Q2c.model<- lm(betaplasma~age+bmicat+smokstat+sex, data=PositivePlasma)
+Q2c.model<- lm(log(betaplasma)~age+bmicat+smokstat+sex, data=PositivePlasma)
 BetaRG.lm <- cbind(summary(Q2c.model)$coefficients,ci =confint(Q2c.model))
 
 #Q2c.1 & 4 get p-value=3.399e-05<.05 and thus, we reject the null hypothesis that the additional variables could be 0. For 4, We accept the null hypothesis that underweight is insignificant given all variables. 
