@@ -199,3 +199,5 @@ plasma.anova <- anova(plasma.LinearModel, Q2c.model)
 (Pvalue_RG<-plasma.anova$"Pr(>F)"[2])
 #Q2c.3 We can reject or accept the value the variables bring by their p-value. bmicat and smokstat matter but sex and age dont.
 anova(Q2c.model)
+
+#sup
