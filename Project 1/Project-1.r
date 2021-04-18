@@ -212,7 +212,14 @@ Full.model<-cbind(PositivePlasma,
     theme(text = element_text(size = 20))+
     geom_line(aes(y=fit))+
     geom_ribbon(aes(ymin = conf.lwr, ymax = conf.upr), alpha = 0.2)+
-    geom_line(aes(y = pred.lwr), color = "red", linetype = 2)+
-    geom_line(aes(y = pred.upr), color = "red", linetype = 2)+
+    geom_line(aes(y = pred.lwr), linetype = 2)+
+    geom_line(aes(y = pred.upr), linetype = 2)+
     facet_grid(smokstat ~ relevel(bmicat, "Underweight"))
 )
+
+# The average age for males is 62:
+MaleAverageAge <- round(mean(PositivePlasma$age[PositivePlasma$sex=="Male"]))
+#Prediction intervals based on age: not sure yet whether can be trusted. "Small" intervals but is this enough?
+x2d<-data.frame(sex = "Male", age = MaleAverageAge, smokstat = "Former", bmicat = "Underweight")
+(confint2d<-cbind(x2d,round(predict(Q2c.model, newdata = x2d, interval = "confidence"),digits = 12)))
+(predint2d<-cbind(x2d,round(predict(Q2c.model, newdata = x2d, interval = "prediction"),digits = 12)))
