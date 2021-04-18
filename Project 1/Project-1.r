@@ -124,7 +124,7 @@ predint3<-cbind(x3,round(predict(plasma.LogModel, newdata = x3, interval = "pred
 
 #2b) model where beta-carotine depends only on bmi. Show how releveling to Normal matters.
 (
-bmi.model<- lm(betaplasma~bmicat, data=PositivePlasma)
+bmi.model<- lm(log(betaplasma)~bmicat, data=PositivePlasma)
 )
 summary(bmi.model)
 (x0 <- data.frame(
