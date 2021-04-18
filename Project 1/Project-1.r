@@ -223,3 +223,43 @@ MaleAverageAge <- round(mean(PositivePlasma$age[PositivePlasma$sex=="Male"]))
 x2d<-data.frame(sex = "Male", age = MaleAverageAge, smokstat = "Former", bmicat = "Underweight")
 (confint2d<-cbind(x2d,round(predict(Q2c.model, newdata = x2d, interval = "confidence"),digits = 12)))
 (predint2d<-cbind(x2d,round(predict(Q2c.model, newdata = x2d, interval = "prediction"),digits = 12)))
+
+
+#Q2e
+Q2e.model<- lm(log(betaplasma)~age+quetelet+smokstat+sex, data=PositivePlasma)
+BetaQuet.coef <- cbind(summary(Q2e.model)$coefficients,ci =confint(Q2e.model))
+##Beta's and exponentiated betas: There is no significant change in the other variables' parameters
+(BetaQuet.coef[, c(1, 5,6)])
+(exp((BetaQuet.coef[, c(1, 5,6)])))
+##Predictions for man and woman 30 yr old, former smokers, normal bmi of 20
+F30B20Disc<-data.frame(sex = "Female", age = 30, smokstat = "Former", bmicat = "Normal")
+(confint2eDF<-cbind(F30B20Disc,round(predict(Q2c.model, newdata = F30B20Disc, interval = "confidence"),digits = 12)))
+
+M30B20Disc<-data.frame(sex = "Male", age = 30, smokstat = "Former", bmicat = "Normal")
+(confint2eDM<-cbind(M30B20Disc,round(predict(Q2c.model, newdata = M30B20Disc, interval = "confidence"),digits = 12)))
+
+F30B20Cont<-data.frame(sex = "Female", age = 30, smokstat = "Former", quetelet = 20)
+(confint2eCF<-cbind(F30B20Cont,round(predict(Q2e.model, newdata = F30B20Cont, interval = "confidence"),digits = 12)))
+
+M30B20Cont<-data.frame(sex = "Male", age = 30, smokstat = "Former", quetelet = 20)
+(confint2eCM<-cbind(M30B20Cont,round(predict(Q2e.model, newdata = M30B20Cont, interval = "confidence"),digits = 12)))
+##Obese (32) Same people
+F30B32Disc<-data.frame(sex = "Female", age = 30, smokstat = "Former", bmicat = "Obese")
+(confint2eDFO<-cbind(F30B32Disc,round(predict(Q2c.model, newdata = F30B32Disc, interval = "confidence"),digits = 12)))
+
+M30B32Disc<-data.frame(sex = "Male", age = 30, smokstat = "Former", bmicat = "Obese")
+(confint2eDMO<-cbind(M30B32Disc,round(predict(Q2c.model, newdata = M30B32Disc, interval = "confidence"),digits = 12)))
+
+F30B32Cont<-data.frame(sex = "Female", age = 30, smokstat = "Former", quetelet = 32)
+(confint2eCFO<-cbind(F30B32Cont,round(predict(Q2e.model, newdata = F30B32Cont, interval = "confidence"),digits = 12)))
+
+M30B32Cont<-data.frame(sex = "Male", age = 30, smokstat = "Former", quetelet = 32)
+(confint2eCMO<-cbind(M30B32Cont,round(predict(Q2e.model, newdata = M30B32Cont, interval = "confidence"),digits = 12)))
+#Relative difference of Obese and normal+confint
+(exp(abs(confint2eDFO[5:7]-confint2eDF[5:7]))/exp(confint2eDF[5:7]))#Female BMI
+(exp(abs(confint2eDM[5:7]-confint2eDMO[5:7]))/exp(confint2eDM[5:7]))#Male BMI
+(exp(abs(confint2eCF[5:7]-confint2eCFO[5:7]))/exp(confint2eCF[5:7]))#Female Quetelet
+(exp(abs(confint2eCM[5:7]-confint2eCMO[5:7]))/exp(confint2eCM[5:7]))#Male Quetelet
+#Q2f
+Q2f.model<- lm(log(betaplasma)~age+quetelet+bmicat+smokstat+sex, data=PositivePlasma)
+(summary(Q2f.model))
