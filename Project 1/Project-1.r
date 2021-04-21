@@ -193,7 +193,7 @@ BetaRG.lm <- cbind(summary(Q2c.model)$coefficients,ci =confint(Q2c.model))
 #Q2c.1 & 4 get p-value=3.399e-05<.05 and thus, we reject the null hypothesis that the additional variables could be 0. For 4, We accept the null hypothesis that underweight is insignificant given all variables. 
 summary(Q2c.model)
 #Q2c.2 ANOVA for age, Our new model is better as the p-value is less than .05.
-plasma.anova <- anova(plasma.LinearModel, Q2c.model)
+plasma.anova <- anova(plasma.LogModel, Q2c.model)
 (Fvalue<-plasma.anova$F[2])
 (Pvalue_RG<-plasma.anova$"Pr(>F)"[2])
 #Q2c.3 We can reject or accept the value the variables bring by their p-value. bmicat and smokstat matter but sex and age dont.
