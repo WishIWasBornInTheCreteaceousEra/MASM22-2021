@@ -100,6 +100,10 @@ x3<-data.frame(age = 71)
 confint3<-cbind(x3,round(predict(plasma.LogModel, newdata = x3, interval = "confidence"),digits = 12))
 predint3<-cbind(x3,round(predict(plasma.LogModel, newdata = x3, interval = "prediction"),digits = 12))
 
+#Difference 30, 31;
+exp(confint0$fit) - exp(confint2$fit)
+#Difference 70, 71:
+exp(confint1$fit) - exp(confint3$fit)
 #Part 2, Frequency tables, need to turn categorigal variables into factors first
 (
   PositivePlasma$sex <- factor(PositivePlasma$sex, 
