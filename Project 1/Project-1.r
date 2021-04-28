@@ -320,7 +320,7 @@ PositivePlasma$vituse <- factor(PositivePlasma$vituse,
 PositivePlasma$vituse <- relevel(PositivePlasma$vituse,"Yes, fairly often")
 
 #Question c:
-Q3c.model<- lm(betaplasma~vituse+calories+fat+fiber+alcohol+cholesterol+betadiet, data=PositivePlasma)
+Q3c.model<- lm(log(betaplasma)~vituse+calories+fat+fiber+alcohol+cholesterol+betadiet, data=PositivePlasma)
 Q3c.pred <- cbind(
   PositivePlasma, 
   fit = predict(Q3c.model),
@@ -466,6 +466,194 @@ annotate_figure(Plots,
     geom_histogram(bins = 30)
 )
 
+MaxRes<-which(Q3c.pred$r==max(abs(Q3c.pred$r)))
 ExResid<-which(abs(Q3c.pred$r) > 3)
 PositivePlasma[c(ExResid),]
 
+#Question e
+# Cook's D####
+Q3c.pred$D <- cooks.distance(Q3c.model)
+
+# Plot against r*
+(f1.plr <- length(Q3c.model$coefficients))
+(f2.plr <- Q3c.model$df.residual)
+(cook.limit.plr <- qf(0.5, f1.plr, f2.plr))
+ggplot(Q3c.pred, aes(fit, D)) + 
+  geom_point(size = 3) +
+  #geom_hline(yintercept = cook.limit.plr, color = "red") +
+  geom_hline(yintercept = 4/nrow(Q3c.pred), linetype = 2, color = "red") +
+  geom_point(data = Q3c.pred[Alcoholic, ], 
+             color = "blue", shape = 24, size = 3)+
+  geom_point(data = Q3c.pred[abs(Q3c.pred$r) > 3,], color = "forestgreen", fill="forestgreen", shape=23 ,size = 3)+
+  geom_point(data = Q3c.pred[MaxRes, ], 
+             color = "black", shape = 9, size = 3)+
+  xlab("Fitted values") +
+  ylab("D_i") +
+  labs(title = "\U03B2-carotene plasma levels: Cook's D") +
+  labs(caption = "4/n (dashed), F_0.5, p+1, n-(p+1) (solid)") +
+  theme(text = element_text(size = 18))
+
+Q3c.pred$df0 <- dfbetas(Q3c.model)[, "(Intercept)"]
+Q3c.pred$df1 <- dfbetas(Q3c.model)[, "vituseYes, not often"]
+Q3c.pred$df2 <- dfbetas(Q3c.model)[, "vituseNo"]
+Q3c.pred$df3 <- dfbetas(Q3c.model)[, "calories"]
+Q3c.pred$df4 <- dfbetas(Q3c.model)[, "fat"]
+Q3c.pred$df5 <- dfbetas(Q3c.model)[, "fiber"]
+Q3c.pred$df6 <- dfbetas(Q3c.model)[, "alcohol"]
+Q3c.pred$df7 <- dfbetas(Q3c.model)[, "cholesterol"]
+Q3c.pred$df8 <- dfbetas(Q3c.model)[, "betadiet"]
+
+
+pdf0<-ggplot(Q3c.pred, aes(x = fit, y = df0)) +
+  geom_point(size = 2) +
+  geom_hline(yintercept = 0) +
+  geom_hline(yintercept = sqrt(cook.limit.plr)*c(-1, 1), color = "red") +
+  geom_hline(yintercept = 2/sqrt(nrow(PositivePlasma))*c(-1, 1), color = "red", linetype = "dashed") +
+  geom_point(data = Q3c.pred[Alcoholic, ], 
+             color = "blue", shape = 24, size = 3)+
+  geom_point(data = Q3c.pred[abs(Q3c.pred$r) > 3,], color = "forestgreen", fill="forestgreen", shape=23 ,size = 3)+
+  geom_point(data = Q3c.pred[MaxRes, ], 
+             color = "black", shape = 9, size = 3)+
+  ylab("DFBETAS_0(i)") +
+  xlab("Fitted values") +
+  labs(title = "DFBETAS_0: impact on the intercept") +
+  labs(caption = "y = sqrt(F_0.5) and 2/sqrt(n)") +
+  theme(text = element_text(size = 18))
+
+pdf1<-ggplot(Q3c.pred, aes(x = fit, y = df1)) +
+  geom_point(size = 2) +
+  geom_hline(yintercept = 0) +
+  geom_hline(yintercept = sqrt(cook.limit.plr)*c(-1, 1), color = "red") +
+  geom_hline(yintercept = 2/sqrt(nrow(PositivePlasma))*c(-1, 1), color = "red", linetype = "dashed") +
+  geom_point(data = Q3c.pred[Alcoholic, ], 
+             color = "blue", shape = 24, size = 3)+
+  geom_point(data = Q3c.pred[abs(Q3c.pred$r) > 3,], color = "forestgreen", fill="forestgreen", shape=23 ,size = 3)+
+  geom_point(data = Q3c.pred[MaxRes, ], 
+             color = "black", shape = 9, size = 3)+
+  ylab("DFBETAS_1(i)") +
+  xlab("Fitted values") +
+  labs(title = "DFBETAS_1: impact on the vitamin use yes, often.") +
+  labs(caption = "y = sqrt(F_0.5) and 2/sqrt(n)") +
+  theme(text = element_text(size = 18))
+
+pdf2<-ggplot(Q3c.pred, aes(x = fit, y = df2)) +
+  geom_point(size = 2) +
+  geom_hline(yintercept = 0) +
+  geom_hline(yintercept = sqrt(cook.limit.plr)*c(-1, 1), color = "red") +
+  geom_hline(yintercept = 2/sqrt(nrow(PositivePlasma))*c(-1, 1), color = "red", linetype = "dashed") +
+  geom_point(data = Q3c.pred[Alcoholic, ], 
+             color = "blue", shape = 24, size = 3)+
+  geom_point(data = Q3c.pred[abs(Q3c.pred$r) > 3,], color = "forestgreen", fill="forestgreen", shape=23 ,size = 3)+
+  geom_point(data = Q3c.pred[MaxRes, ], 
+             color = "black", shape = 9, size = 3)+
+  ylab("DFBETAS_2(i)") +
+  xlab("Fitted values") +
+  labs(title = "DFBETAS_2: impact on the vitamin use yes, not often") +
+  labs(caption = "y = sqrt(F_0.5) and 2/sqrt(n)") +
+  theme(text = element_text(size = 18))
+
+pdf3<-ggplot(Q3c.pred, aes(x = fit, y = df3)) +
+  geom_point(size = 2) +
+  geom_hline(yintercept = 0) +
+  geom_hline(yintercept = sqrt(cook.limit.plr)*c(-1, 1), color = "red") +
+  geom_hline(yintercept = 2/sqrt(nrow(PositivePlasma))*c(-1, 1), color = "red", linetype = "dashed") +
+  geom_point(data = Q3c.pred[Alcoholic, ], 
+             color = "blue", shape = 24, size = 3)+
+  geom_point(data = Q3c.pred[abs(Q3c.pred$r) > 3,], color = "forestgreen", fill="forestgreen", shape=23 ,size = 3)+
+  geom_point(data = Q3c.pred[MaxRes, ], 
+             color = "black", shape = 9, size = 3)+
+  ylab("DFBETAS_3(i)") +
+  xlab("Fitted values") +
+  labs(title = "DFBETAS_3: impact on the vitamin use no") +
+  labs(caption = "y = sqrt(F_0.5) and 2/sqrt(n)") +
+  theme(text = element_text(size = 18))
+
+pdf4<-ggplot(Q3c.pred, aes(x = fit, y = df4)) +
+  geom_point(size = 2) +
+  geom_hline(yintercept = 0) +
+  geom_hline(yintercept = sqrt(cook.limit.plr)*c(-1, 1), color = "red") +
+  geom_hline(yintercept = 2/sqrt(nrow(PositivePlasma))*c(-1, 1), color = "red", linetype = "dashed") +
+  geom_point(data = Q3c.pred[Alcoholic, ], 
+             color = "blue", shape = 24, size = 3)+
+  geom_point(data = Q3c.pred[abs(Q3c.pred$r) > 3,], color = "forestgreen", fill="forestgreen", shape=23 ,size = 3)+
+  geom_point(data = Q3c.pred[MaxRes, ], 
+             color = "black", shape = 9, size = 3)+
+  ylab("DFBETAS_4(i)") +
+  xlab("Fitted values") +
+  labs(title = "DFBETAS_4: impact on the fat") +
+  labs(caption = "y = sqrt(F_0.5) and 2/sqrt(n)") +
+  theme(text = element_text(size = 18))
+
+pdf5<-ggplot(Q3c.pred, aes(x = fit, y = df5)) +
+  geom_point(size = 2) +
+  geom_hline(yintercept = 0) +
+  geom_hline(yintercept = sqrt(cook.limit.plr)*c(-1, 1), color = "red") +
+  geom_hline(yintercept = 2/sqrt(nrow(PositivePlasma))*c(-1, 1), color = "red", linetype = "dashed") +
+  geom_point(data = Q3c.pred[Alcoholic, ], 
+             color = "blue", shape = 24, size = 3)+
+  geom_point(data = Q3c.pred[abs(Q3c.pred$r) > 3,], color = "forestgreen", fill="forestgreen", shape=23 ,size = 3)+
+  geom_point(data = Q3c.pred[MaxRes, ], 
+             color = "black", shape = 9, size = 3)+
+  ylab("DFBETAS_5(i)") +
+  xlab("Fitted values") +
+  labs(title = "DFBETAS_5: impact on the fiber") +
+  labs(caption = "y = sqrt(F_0.5) and 2/sqrt(n)") +
+  theme(text = element_text(size = 18))
+
+pdf6<-ggplot(Q3c.pred, aes(x = fit, y = df6)) +
+  geom_point(size = 2) +
+  geom_hline(yintercept = 0) +
+  geom_hline(yintercept = sqrt(cook.limit.plr)*c(-1, 1), color = "red") +
+  geom_hline(yintercept = 2/sqrt(nrow(PositivePlasma))*c(-1, 1), color = "red", linetype = "dashed") +
+  geom_point(data = Q3c.pred[Alcoholic, ], 
+             color = "blue", shape = 24, size = 3)+
+  geom_point(data = Q3c.pred[abs(Q3c.pred$r) > 3,], color = "forestgreen", fill="forestgreen", shape=23 ,size = 3)+
+  geom_point(data = Q3c.pred[MaxRes, ], 
+             color = "black", shape = 9, size = 3)+
+  ylab("DFBETAS_6(i)") +
+  xlab("Fitted values") +
+  labs(title = "DFBETAS_6: impact on the alcohol") +
+  labs(caption = "y = sqrt(F_0.5) and 2/sqrt(n)") +
+  theme(text = element_text(size = 18))
+
+pdf7<-ggplot(Q3c.pred, aes(x = fit, y = df7)) +
+  geom_point(size = 2) +
+  geom_hline(yintercept = 0) +
+  geom_hline(yintercept = sqrt(cook.limit.plr)*c(-1, 1), color = "red") +
+  geom_hline(yintercept = 2/sqrt(nrow(PositivePlasma))*c(-1, 1), color = "red", linetype = "dashed") +
+  geom_point(data = Q3c.pred[Alcoholic, ], 
+             color = "blue", shape = 24, size = 3)+
+  geom_point(data = Q3c.pred[abs(Q3c.pred$r) > 3,], color = "forestgreen", fill="forestgreen", shape=23 ,size = 3)+
+  geom_point(data = Q3c.pred[MaxRes, ], 
+             color = "black", shape = 9, size = 3)+
+  ylab("DFBETAS_7(i)") +
+  xlab("Fitted values") +
+  labs(title = "DFBETAS_7: impact on the cholesterol") +
+  labs(caption = "y = sqrt(F_0.5) and 2/sqrt(n)") +
+  theme(text = element_text(size = 18))
+
+pdf8<-ggplot(Q3c.pred, aes(x = fit, y = df8)) +
+  geom_point(size = 2) +
+  geom_hline(yintercept = 0) +
+  geom_hline(yintercept = sqrt(cook.limit.plr)*c(-1, 1), color = "red") +
+  geom_hline(yintercept = 2/sqrt(nrow(PositivePlasma))*c(-1, 1), color = "red", linetype = "dashed") +
+  geom_point(data = Q3c.pred[Alcoholic, ], 
+             color = "blue", shape = 24, size = 3)+
+  geom_point(data = Q3c.pred[abs(Q3c.pred$r) > 3,], color = "forestgreen", fill="forestgreen", shape=23 ,size = 3)+
+  geom_point(data = Q3c.pred[MaxRes, ], 
+             color = "black", shape = 9, size = 3)+
+  ylab("DFBETAS_0(i)") +
+  xlab("Fitted values") +
+  labs(title = "DFBETAS_8: impact on the dietary beta-carotene consumed") +
+  labs(caption = "y = sqrt(F_0.5) and 2/sqrt(n)") +
+  theme(text = element_text(size = 18))
+
+
+
+DFBPlots<-ggarrange(pdf0, pdf1, pdf2, pdf3, pdf4, pdf5, pdf6, pdf7, pdf8, labels="AUTO")
+annotate_figure(DFBPlots,
+                top = text_grob("DFBetas of the dietary parameters", color = "black", face = "bold", size = 14),
+                bottom = text_grob("y = sqrt(F_0.5) (solid) and 2/sqrt(n) (dashed)", color = "black",
+                                   hjust = 1, x = 1, face = "italic", size = 16),
+                left = text_grob("DFBETAS", color = "black", rot = 90),
+)
