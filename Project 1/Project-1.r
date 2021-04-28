@@ -87,22 +87,42 @@ ggplot(y0.log,aes(x = e))+
 
 #Prediction intervals based on age
 x0<-data.frame(age = 30)
-confint0<-cbind(x0,round(predict(plasma.LogModel, newdata = x0, interval = "confidence"),digits = 12))
 predint0<-cbind(x0,round(predict(plasma.LogModel, newdata = x0, interval = "prediction"),digits = 12))
 
 x1<-data.frame(age = 70)
-confint1<-cbind(x1,round(predict(plasma.LogModel, newdata = x1, interval = "confidence"),digits = 12))
 predint1<-cbind(x1,round(predict(plasma.LogModel, newdata = x1, interval = "prediction"),digits = 12))
 
+#31 year old & 71 year old
 x2<-data.frame(age = 31)
-confint2<-cbind(x2,round(predict(plasma.LogModel, newdata = x2, interval = "confidence"),digits = 12))
 predint2<-cbind(x2,round(predict(plasma.LogModel, newdata = x2, interval = "prediction"),digits = 12))
 
 x3<-data.frame(age = 71)
-confint3<-cbind(x3,round(predict(plasma.LogModel, newdata = x3, interval = "confidence"),digits = 12))
 predint3<-cbind(x3,round(predict(plasma.LogModel, newdata = x3, interval = "prediction"),digits = 12))
 
-#Part 2, Frequency tables, need to turn categorigal variables into factors first
+#Difference 30, 31;
+exp(predint0$fit) - exp(predint2$fit)
+#Difference 70, 71:
+exp(predint1$fit) - exp(predint3$fit)
+
+#Question c
+#Widths: Substatial difference since we use a log transformed model.
+(W30<-exp(predint0$upr)-exp(predint0$lwr))
+(W70<-exp(predint1$upr)-exp(predint1$lwr))
+#Nice plot explaining the difference: The difference increases as we have an exponential relation.
+(ggplot(data = y0.log, aes(x = age, y = betaplasma))+
+    geom_point(size = 3)+
+    xlab("age [year]") +
+    ylab("Plasma \U03B2-carotene Levels [ng/ml]")+
+    theme(text = element_text(size = 20))+
+    geom_line(aes(y=fit))+
+    geom_ribbon(aes(ymin = exp(conf.lwr), ymax = exp(conf.upr)), alpha = 0.2)+
+    geom_line(aes(y = exp(pred.lwr)), color = "red", linetype = 2)+
+    geom_line(aes(y = exp(pred.upr)), color = "red", linetype = 2)
+)
+
+
+
+  #Part 2, Frequency tables, need to turn categorical variables into factors first
 (
   PositivePlasma$sex <- factor(PositivePlasma$sex, 
                                levels = c(1, 2),
@@ -657,3 +677,47 @@ annotate_figure(DFBPlots,
                                    hjust = 1, x = 1, face = "italic", size = 16),
                 left = text_grob("DFBETAS", color = "black", rot = 90),
 )
+
+
+#part 3f, stepwise reduction of dietary model
+Dietary.model <- step(Q3c.model)
+BetaDiet.model <- cbind(summary(Dietary.model)$coefficients,ci =confint(Dietary.model))
+Conf.Dietary <- exp(BetaDiet.model[, c(1, 5, 6)])
+
+#part 4g, combined model
+model.0 <- lm(log(betaplasma) ~ 1, data = PositivePlasma)
+model.max <- lm(log(betaplasma) ~ vituse+calories+fiber+alcohol+betadiet+age+quetelet+smokstat+sex, data = PositivePlasma)
+
+#AIC:
+StepAIC.model<-step(Dietary.model, 
+                   scope = list(lower = model.0, upper = model.max),
+                   direction = "both")
+
+#BIC:
+StepBIC.model<-step(Dietary.model, 
+                    scope = list(lower = model.0, upper = model.max),
+                    direction = "both",
+                    k = log(nrow(PositivePlasma)))
+
+
+#Question h: Age, Background, Dietary, Step AIC, and Step BIC
+sum.0<-summary(plasma.LogModel)
+sum.1<-summary(Q2e.model)
+sum.2<-summary(Q3c.model)
+sum.3<-summary(StepAIC.model)
+sum.4<-summary(StepBIC.model)
+
+
+(collect.R2s <- data.frame(
+  nr = seq(1, 5),
+  model = c("Age", "Background", "Dietary", "Step AIC", "Step BIC"),
+  R2 = c(sum.0$r.squared,
+         sum.1$r.squared,
+         sum.2$r.squared,
+         sum.3$r.squared,
+         sum.4$r.squared),
+  R2.adj = c(sum.0$adj.r.squared,
+             sum.1$adj.r.squared,
+             sum.2$adj.r.squared,
+             sum.3$adj.r.squared,
+             sum.4$adj.r.squared)))
