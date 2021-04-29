@@ -278,6 +278,17 @@ F30B32Cont<-data.frame(sex = "Female", age = 30, smokstat = "Former", quetelet =
 
 M30B32Cont<-data.frame(sex = "Male", age = 30, smokstat = "Former", quetelet = 32)
 (confint2eCMO<-cbind(M30B32Cont,round(predict(Q2e.model, newdata = M30B32Cont, interval = "confidence"),digits = 12)))
+
+#Values
+FSMF30<-data.frame(confint2eDF[,c(5,6,7)],
+                   confint2eDM[,c(5,6,7)],
+                   confint2eCF[,c(5,6,7)],
+                   confint2eCM[,c(5,6,7)],
+                   confint2eDFO[,c(5,6,7)],
+                   confint2eDMO[,c(5,6,7)],
+                   confint2eCFO[,c(5,6,7)],
+                   confint2eCMO[,c(5,6,7)])
+
 #Relative difference of Obese and normal+confint
 (exp(abs(confint2eDFO[5:7]-confint2eDF[5:7]))/exp(confint2eDF[5:7]))#Female BMI
 (exp(abs(confint2eDM[5:7]-confint2eDMO[5:7]))/exp(confint2eDM[5:7]))#Male BMI
@@ -341,6 +352,7 @@ PositivePlasma$vituse <- relevel(PositivePlasma$vituse,"Yes, fairly often")
 
 #Question c:
 Q3c.model<- lm(log(betaplasma)~vituse+calories+fat+fiber+alcohol+cholesterol+betadiet, data=PositivePlasma)
+Q3c.betas <- cbind(summary(Q3c.model)$coefficients,ci =confint(Q3c.model))
 Q3c.pred <- cbind(
   PositivePlasma, 
   fit = predict(Q3c.model),
