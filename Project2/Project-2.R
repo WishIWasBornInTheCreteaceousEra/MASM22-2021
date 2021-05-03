@@ -47,10 +47,35 @@ low_percentage <- (low_total/316)*100
 
 table(PositivePlasma$smokstat, PositivePlasma$lowplasma)
 
+glm(lowplasma ~ smokstat, family = "binomial", data = PositivePlasma)
+(model.1 <- glm(lowplasma ~ smokstat, family = "binomial", data = PositivePlasma))
+summary(model.1)
 
+# beta: log-odds(ratio) with c.i.:
+model.1$coefficients
+(ci.beta <- confint(model.1))
 
+# Odds (exp(beta0)) and OR, odds ratio, exp(beta1), exp(beta2)
+exp(model.1$coefficients)
+(ci.or <- exp(ci.beta))
 
+#probability for "Never" to have low beta-plasma:
+(prob_0 <- 2.250000/(2.250000+1))
+#confidence interval:
+(prob_0_low <- 1.6120554/(1.6120554+1))
+(prob_0_high <- 3.187487/(3.187487+1))
 
+#probability for "Former" to have low beta-plasma:
+(prob_1 <- 1.318008*prob_0/(1-prob_0)/(1+1.318008*prob_0/(1-prob_0)))
+#confidence interval:
+(prob_1_low <- 0.7707618*prob_0/(1-prob_0)/(1+0.7707618*prob_0/(1-prob_0)))
+(prob_1_high <- 2.280987*prob_0/(1-prob_0)/(1+2.280987*prob_0/(1-prob_0)))
+
+#probability for "Current" to have low beta-plasma:
+(prob_1 <- 5.925926*prob_0/(1-prob_0)/(1+5.925926*prob_0/(1-prob_0)))
+#confidence interval:
+(prob_2_low <- 2.0209273*prob_0/(1-prob_0)/(1+2.0209273*prob_0/(1-prob_0)))
+(prob_2_high <- 25.326220*prob_0/(1-prob_0)/(1+25.326220*prob_0/(1-prob_0)))
 
 
 
