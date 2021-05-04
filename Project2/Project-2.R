@@ -37,7 +37,7 @@ a <- 225.498
 #Part 0 b) beta-carotene is considered low if below 225.498 ng/ml
 PositivePlasma$lowplasma <- as.numeric(PositivePlasma$betaplasma < a)
 # factor version for ease of use later on:
-plasma$plasmacat <- factor(plasma$lowplasma,
+PositivePlasma$plasmacat <- factor(PositivePlasma$lowplasma,
                            levels = c(0, 1),
                            labels = c("high", "low"))
 # How many are low?
@@ -77,12 +77,13 @@ exp(model.1$coefficients)
 (prob_2_low <- 2.0209273*prob_0/(1-prob_0)/(1+2.0209273*prob_0/(1-prob_0)))
 (prob_2_high <- 25.326220*prob_0/(1-prob_0)/(1+25.326220*prob_0/(1-prob_0)))
 
-
-
-
-
-
-
+#Wald test
+summary(model.1)$coefficients
+# Since |0.2761213| < lambda_0.025 = 1.96 we accept
+# H0: beta_1 = 0
+# Since |1.7793369| < lambda_0.025 = 1.96 we accept
+# H0: beta_1 = 0
+#The smoking has no significant impact on the beta-carotene levels
 
 
 
