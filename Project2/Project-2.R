@@ -82,12 +82,39 @@ summary(model.1)$coefficients
 # Since |0.2761213| < lambda_0.025 = 1.96 we accept
 # H0: beta_1 = 0
 # Since |1.7793369| < lambda_0.025 = 1.96 we accept
-# H0: beta_1 = 0
+# H0: beta_2 = 0
 #The smoking has no significant impact on the beta-carotene levels
 
+# 1b)
+glm(lowplasma ~ smokstat, family = "binomial", data = PositivePlasma)
+(model.2 <- glm(lowplasma ~ age, family = "binomial", data = PositivePlasma))
 
+PositivePlasma.pred <- cbind(
+  PositivePlasma,
+  phat = predict(model.2, type = "response"))
 
+ggplot(PositivePlasma.pred, aes(age, lowplasma)) +
+  geom_point() +
+  geom_smooth(se = FALSE, linetype = "dashed") +
+  geom_line(aes(y = phat), color = "red", size = 1) +
+  xlab("age") +
+  ylab("low beta-carotene") +
+  labs(title = "High PM10 (=1) or Not high PM10 (=0) vs number of cars",
+       caption = "red = fitted line, blue dashed = moving average") +
+  theme(text = element_text(size = 14))
 
+# beta: log-odds(ratio) with c.i.:
+model.2$coefficients
+(ci.beta <- confint(model.2))
+
+# Odds (exp(beta0)) and OR, odds ratio, exp(beta1)
+exp(model.2$coefficients)
+(ci.or <- exp(ci.beta))
+#Wald test
+summary(model.2)$coefficients
+# Since |-0.02835726| < lambda_0.025 = 1.96 we can reject
+# H0: beta_1 = 0
+#The age has a significant impact on the beta-carotene levels
 
 
 
