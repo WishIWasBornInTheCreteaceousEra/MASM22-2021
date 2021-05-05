@@ -224,7 +224,7 @@ Background.pred <- cbind(
   phat = predict(background.model, type = "response"),
   logit = predict(background.model, se.fit = TRUE))
 
-(lowplasmabg.plot<-ggplot(Background.pred, aes(age, lowplasma)) + 
+(lowplasmaAGEbg.plot<-ggplot(Background.pred, aes(age, lowplasma)) + 
     geom_point() +
     geom_point(aes(y=phat, color=bmicat))+
     facet_grid(~smokstat)+
@@ -233,7 +233,7 @@ Background.pred <- cbind(
          color = "BMI\nCategories") +
     theme(text = element_text(size = 14)))
 
-(lowplasmabg.plot<-ggplot(Background.pred, aes(quetelet, lowplasma)) + 
+(lowplasmaQUETbg.plot<-ggplot(Background.pred, aes(quetelet, lowplasma)) + 
     geom_point() +
     geom_point(aes(y=phat, color=agecat))+
     facet_grid(~smokstat)+
@@ -241,3 +241,80 @@ Background.pred <- cbind(
          caption = "Individual plots seperated by smoking status",
          color="Age\nGroups") +
     theme(text = element_text(size = 14)))
+#Question b:
+Background.pred$v <- influence(background.model)$hat
+Background.pred$devres <- influence(background.model)$dev.res
+Background.pred$devstd <- Background.pred$devres/sqrt(1 - Background.pred$v)
+Background.pred$Dcook <- cooks.distance(background.model)
+
+
+#Leverage Plots
+(LeverageBMIbg.plot<-ggplot(Background.pred, aes(age, v, color=bmicat)) + 
+    geom_point() +  
+    facet_grid(~smokstat)+
+    geom_hline(yintercept = 2*length(background.model$coefficients)/nrow(PositivePlasma), 
+               color = "red", size = 1) +
+    labs(caption = "2(p+1)/n in red",
+         color = "BMI\nCategories",
+         y="Leverage") +
+    theme(text = element_text(size = 14)))
+
+(LeverageAgebg.plot<-ggplot(Background.pred, aes(quetelet, v, color=agecat)) + 
+    geom_point() +  
+    facet_grid(~smokstat)+
+    geom_hline(yintercept = 2*length(background.model$coefficients)/nrow(PositivePlasma), 
+               color = "red", size = 1) +
+    labs(caption = "2(p+1)/n in red",
+         color = "Age\nGroups",
+         y="Leverage") +
+    theme(text = element_text(size = 14)))
+
+#Deviance plots
+(devstdBMIbg.plot<-ggplot(Background.pred, aes(age, devstd, color=bmicat)) + 
+    geom_point() +
+    geom_point(data = Background.pred[abs(Background.pred$devstd) > 2,], 
+                                             color = "red", size = 3)+
+    geom_hline(yintercept = 0) + 
+    geom_hline(yintercept = c(-2, 2), linetype = "dashed", size = 1) +
+    labs(caption = "\U00B1 2 dashed",
+         color = "BMI\nCategories",
+         y="Standardized Deviance") +
+    theme(text = element_text(size = 14)))
+
+(devstdAgebg.plot<-ggplot(Background.pred, aes(quetelet, devstd, color=agecat)) + 
+    geom_point() +
+    geom_point(data = Background.pred[abs(Background.pred$devstd) > 2,], 
+               color = "red", size = 3)+
+    geom_hline(yintercept = 0) + 
+    geom_hline(yintercept = c(-2, 2), linetype = "dashed", size = 1) +
+    labs(caption = "\U00B1 2 dashed",
+         color = "Age\nGroups",
+         y="Standardized Deviance") +
+    theme(text = element_text(size = 14)))
+
+#Cook Plots
+(CooksDBMIbg.plot<-ggplot(Background.pred, aes(age, Dcook, color=bmicat)) + 
+  geom_point() +
+  geom_point(data = Background.pred[abs(Background.pred$devstd) > 2,], 
+             color = "blue", size = 3, shape=24)+
+  geom_hline(yintercept = 4/nrow(PositivePlasma), linetype = "dotted",
+             size = 1) +
+  labs(color = "BMI\nCategories", 
+       caption = "4/n in black, high residual in blue.",
+       y="Cook's Distance") +
+  theme(text = element_text(size = 14)))
+
+(CooksDAgebg.plot<-ggplot(Background.pred, aes(quetelet, Dcook, color=agecat)) + 
+    geom_point() +
+    geom_point(data = Background.pred[abs(Background.pred$devstd) > 2,], 
+               color = "blue", size = 3, shape=24)+
+    geom_hline(yintercept = 4/nrow(PositivePlasma), linetype = "dotted",
+               size = 1) +
+    labs(color = "Age\nGroups", 
+         caption = "4/n in black, high residual in blue.",
+         y="Cook's Distance") +
+    theme(text = element_text(size = 14)))
+(lowplasmaAGEbg2.plot<-lowplasmaAGEbg.plot+geom_point(data = Background.pred[abs(Background.pred$devstd) > 2,], 
+                                                color = "blue", size = 3, shape=24))
+(lowplasmaQUETbg2.plot<-lowplasmaQUETbg.plot+geom_point(data = Background.pred[abs(Background.pred$devstd) > 2,], 
+                                                   color = "blue", size = 3, shape=24))
