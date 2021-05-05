@@ -190,3 +190,37 @@ PositivePlasma.pred$devstd <- PositivePlasma.pred$devres/sqrt(1 - PositivePlasma
 
 highdevstd.idx <- which(abs(PositivePlasma.pred$devstd)==max(abs(PositivePlasma.pred$devstd)))
 (Q1d.plot<-Q1c.plot+geom_point(data = PositivePlasma.pred[c(highdevstd.idx), ], size = 3, color = "blue", shape = 24))
+
+#Question e:
+# Cook's distance####
+PositivePlasma.pred$Dcook <- cooks.distance(age.model)
+
+ggplot(PositivePlasma.pred, aes(age, Dcook, color = plasmacat)) +
+  geom_point() +
+  geom_point(data = PositivePlasma.pred[c(highv.idx), ], size = 3,
+            color = "red", shape = 24)+
+  geom_point(data = PositivePlasma.pred[c(highdevstd.idx), ], size = 3,
+             color = "blue", shape = 24)+
+  geom_hline(yintercept = 4/nrow(PositivePlasma), linetype = "dotted",
+             size = 1) +
+  labs(color = "\U03B2-carotene\nconcentrations", 
+       caption = "4/n in black, high leverage highlighted in red and high residual in blue.",
+       y="Cook's Distance") +
+  theme(text = element_text(size = 14))
+
+
+#Part 2:
+model.0 <- glm(lowplasma ~ 1, family = "binomial", data = PositivePlasma)
+model.max <- glm(lowplasma ~ age+sex+smokstat+quetelet, family = "binomial", data = PositivePlasma)
+background.model<-step(age.model, 
+                    scope = list(lower = model.0, upper = model.max),
+                    direction = "both")
+(BetaB.lm <- cbind(summary(background.model)$coefficients,ci =confint(background.model)))
+(exp(BetaB.lm[,c(1,5,6)]))
+
+plasma$agecat <- cut(plasma$age, breaks = c(0, 40, 55, 100))
+(background.plot<-ggplot(PositivePlasma.pred, aes(age, lowplasma)) + 
+    geom_point() +
+    facet_grid(~smokstat)+
+    labs(caption = "\U00B1 2 dashed, \U00B1 3 dotted") +
+    theme(text = element_text(size = 14)))
