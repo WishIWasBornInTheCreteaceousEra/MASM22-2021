@@ -218,9 +218,26 @@ background.model<-step(age.model,
 (BetaB.lm <- cbind(summary(background.model)$coefficients,ci =confint(background.model)))
 (exp(BetaB.lm[,c(1,5,6)]))
 
-plasma$agecat <- cut(plasma$age, breaks = c(0, 40, 55, 100))
-(background.plot<-ggplot(PositivePlasma.pred, aes(age, lowplasma)) + 
+PositivePlasma$agecat <- cut(PositivePlasma$age, breaks = c(0, 40, 55, 100))
+Background.pred <- cbind(
+  PositivePlasma,
+  phat = predict(background.model, type = "response"),
+  logit = predict(background.model, se.fit = TRUE))
+
+(lowplasmabg.plot<-ggplot(Background.pred, aes(age, lowplasma)) + 
     geom_point() +
+    geom_point(aes(y=phat, color=bmicat))+
     facet_grid(~smokstat)+
-    labs(caption = "\U00B1 2 dashed, \U00B1 3 dotted") +
+    labs(y="probability of having low \U03B2-carotene", 
+         caption = "Individual plots seperated by smoking status",
+         color = "BMI\nCategories") +
+    theme(text = element_text(size = 14)))
+
+(lowplasmabg.plot<-ggplot(Background.pred, aes(quetelet, lowplasma)) + 
+    geom_point() +
+    geom_point(aes(y=phat, color=agecat))+
+    facet_grid(~smokstat)+
+    labs(y="probability of having low \U03B2-carotene", 
+         caption = "Individual plots seperated by smoking status",
+         color="Age\nGroups") +
     theme(text = element_text(size = 14)))
