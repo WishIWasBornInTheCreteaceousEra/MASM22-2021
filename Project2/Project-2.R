@@ -329,6 +329,10 @@ model2c.max <- glm(lowplasma ~ vituse+calories+fiber+alcohol+betadiet+fat+choles
 diet.model<-step(model2c.max, 
                     scope = list(lower = model.0, upper = model2c.max),
                     direction = "backward")
+
+(BetaDiet.lm <- cbind(summary(diet.model)$coefficients,ci =confint(diet.model)))
+(exp(BetaDiet.lm[,c(1,5,6)]))
+
 #Testing: We conclude that the diet
 #Create object for ease of use.
 collect.AIC <- AIC(age.model, background.model, diet.model)
@@ -403,7 +407,10 @@ AIC.list$loglikelihoods<-c(logLik(AICintermediate.model)[1],
                   logLik(Nofibercalories.model)[1],
                   logLik(Nosmokecalories.model)[1])
 #We find that our AICintermediate model is the final model, this agrees with the package bestglm.
+(AIC.list$R2McF.adj <- 1 - (AIC.list$loglikelihoods/lnL0))
 (AIC.list$R2McF.adj <- 1 - (AIC.list$loglikelihoods - (AIC.list$df - 1)/2)/lnL0)
 
+(BetaFinal.lm <- cbind(summary(AICintermediate.model)$coefficients,ci =confint(AICintermediate.model)))
+(exp(BetaFinal.lm[,c(1,5,6)]))
 
 #Part 3:
