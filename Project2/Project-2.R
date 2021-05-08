@@ -1,4 +1,4 @@
-#Project 1
+#Project 2
 library(ggplot2)
 library(GGally)
 library(ggpubr)
@@ -209,11 +209,12 @@ ggplot(PositivePlasma.pred, aes(age, Dcook, color = plasmacat)) +
   theme(text = element_text(size = 14))
 
 
-#Part 2:
+##Part 2:##
+#Question a:
 model.0 <- glm(lowplasma ~ 1, family = "binomial", data = PositivePlasma)
-model.max <- glm(lowplasma ~ age+sex+smokstat+quetelet, family = "binomial", data = PositivePlasma)
+model2.max <- glm(lowplasma ~ age+sex+smokstat+quetelet, family = "binomial", data = PositivePlasma)
 background.model<-step(age.model, 
-                    scope = list(lower = model.0, upper = model.max),
+                    scope = list(lower = model.0, upper = model2.max),
                     direction = "both")
 (BetaB.lm <- cbind(summary(background.model)$coefficients,ci =confint(background.model)))
 (exp(BetaB.lm[,c(1,5,6)]))
@@ -318,3 +319,91 @@ Background.pred$Dcook <- cooks.distance(background.model)
                                                 color = "blue", size = 3, shape=24))
 (lowplasmaQUETbg2.plot<-lowplasmaQUETbg.plot+geom_point(data = Background.pred[abs(Background.pred$devstd) > 2,], 
                                                    color = "blue", size = 3, shape=24))
+#Question c: We use AIC as the number of independent variables is already rather small compared to our degrees of
+#freedom thus, limiting it is not necessarily ideal. Furthermore, .backwards is better due to collinearity and the
+#fact that the number of samples we have exceed the number of parameters so considering each parameter is beneficial.
+model2c.max <- glm(lowplasma ~ vituse+calories+fiber+alcohol+betadiet+fat+cholesterol, family = "binomial", data = PositivePlasma)
+
+#AIC:320.36 with vituse + calories + fiber + betadiet on backwards (See modules file for complete comparison.)
+#Explanation above however covers our abses
+diet.model<-step(model2c.max, 
+                    scope = list(lower = model.0, upper = model2c.max),
+                    direction = "backward")
+#Testing: We conclude that the diet
+#Create object for ease of use.
+collect.AIC <- AIC(age.model, background.model, diet.model)
+(lnL0 <- logLik(model.0)[1])
+(R2CS.max <- 1 - (exp(lnL0))^(2/nrow(PositivePlasma)))
+# Collect the log likelihoods L(betahat)
+collect.AIC$loglik <- 
+  c(logLik(age.model)[1],
+    logLik(background.model)[1],
+    logLik(diet.model)[1])
+# calculate R2_McF;
+collect.AIC$R2McF <- 1 - collect.AIC$loglik/lnL0
+# calculate R2_McF,adj. Note that p+1 = df (and df.1):
+collect.AIC$R2McF.adj <- 1 - (collect.AIC$loglik - (collect.AIC$df - 1)/2)/lnL0
+# calculate R2_CS:
+collect.AIC$R2CS <- 1 - (exp(lnL0 - collect.AIC$loglik))^(2/nrow(PositivePlasma))
+# Calculate R2_N:
+collect.AIC$R2N <- collect.AIC$R2CS/R2CS.max
+
+# Show them as % with one decimal value: the p's are 2,5,6. AIC and McFadden's adjusted pseudo R^2 agrees diet is 
+#best. Unrelated side note, Cox and Snell's R2 as a theoretical maximum value of less than 1, even for a "perfect"
+#model when the outcomes can be categorical. Nagelkerke's R2 fixes that. McFadden's is a comparison to the intercept
+#model.
+round(100*collect.AIC[, c("R2McF", "R2McF.adj", "R2CS", "R2N")], digits = 1)
+
+
+#Question d:(Check the modules file for the quick method.)
+#We know BIC will punish large models so we use BIC in the backwards configuration to find the lowest state and work
+#from there.
+model2d.max<- glm(lowplasma ~ vituse+calories+fiber+alcohol+betadiet+fat+cholesterol+age+sex+smokstat+quetelet, family = "binomial", data = PositivePlasma)
+
+#However due to the reasons mentioned before it likely penalizes our model too heavily so we should use AIC in the
+#backwards configuration. AIC of 306.9 vituse* + calories + fiber + betadiet + age + smokstat + quetelet
+AICintermediate.model<-step(model2d.max, 
+                         scope = list(lower = model.0, upper = model2d.max),
+                         direction = "backward")
+#AIC of 308.91 with vituse* + betadiet + age + quetelet
+BICintermediate.model<-step(model2d.max, 
+                         scope = list(lower = model.0, upper = model2d.max),
+                         direction = "backward",
+                         k = log(nrow(PositivePlasma)))
+#BIC Test model has an AIC of 306.53 with vituse* + betadiet + age + quetelet + smokstat, *indicates
+#vituse of yes often is not used.
+BICtest.model<-step(BICintermediate.model, 
+                 scope = list(lower = model.0, upper = model2d.max),
+                 direction = "both")
+#AIC Test model would be identical. Performing a manual analysis we find that fiber, smoking status, and calories 
+#are potentially insignificant
+Fiberless.model<-glm(lowplasma ~ vituse+calories+betadiet+age+smokstat+quetelet, family = "binomial", data = PositivePlasma)
+nosmoke.model<-glm(lowplasma ~ vituse+calories+betadiet+age+fiber+quetelet, family = "binomial", data = PositivePlasma)
+nocalories.model<-glm(lowplasma ~ vituse+fiber+betadiet+age+smokstat+quetelet, family = "binomial", data = PositivePlasma)
+
+Nosmokefiber.model<-glm(lowplasma ~ vituse+calories+betadiet+age+quetelet, family = "binomial", data = PositivePlasma)
+Nofibercalories.model<-glm(lowplasma ~ vituse+betadiet+age+smokstat+quetelet, family = "binomial", data = PositivePlasma)
+Nosmokecalories.model<-glm(lowplasma ~ vituse+fiber+betadiet+age+quetelet, family = "binomial", data = PositivePlasma)
+
+#We care about the adjusted mcfadden pseudo R^2's
+AIC.list <- AIC(AICintermediate.model, 
+                BICtest.model, 
+                Fiberless.model, 
+                nosmoke.model,
+                nocalories.model, 
+                Nosmokefiber.model, 
+                Nofibercalories.model, 
+                Nosmokecalories.model)
+AIC.list$loglikelihoods<-c(logLik(AICintermediate.model)[1],
+                  logLik(BICtest.model)[1],
+                  logLik(Fiberless.model)[1],
+                  logLik(nosmoke.model)[1],
+                  logLik(nocalories.model)[1],
+                  logLik(Nosmokefiber.model)[1],
+                  logLik(Nofibercalories.model)[1],
+                  logLik(Nosmokecalories.model)[1])
+#We find that our AICintermediate model is the final model, this agrees with the package bestglm.
+(AIC.list$R2McF.adj <- 1 - (AIC.list$loglikelihoods - (AIC.list$df - 1)/2)/lnL0)
+
+
+#Part 3:
