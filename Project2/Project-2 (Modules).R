@@ -2,7 +2,7 @@ library(ggplot2)
 library(GGally)
 library(ggpubr)
 library(bestglm)
-
+library(cutpointr)
 
 #Question c: We use AIC as the number of independent variables is already rather small compared to our degrees of
 #freedom thus, limiting it is not necessarily ideal. Furthermore, .backwards is better due to collinearity and the
@@ -65,3 +65,15 @@ ans$df<-0.5*(ans$AIC+2*ans$logLikelihood)+1
 # calculate R2_McF,adj. We find that the largest R2 occurs at row 7 that is 6 variables; note that this isnt the
 #maximum AIC. Based on R^2adj,mcf our model is: (lowplasma~age,smokstat,quetelet,vituse,calories,fiber,betadiet)
 ans$R2McF.adj <- 1 - (ans$logLikelihood - (ans$df - 1)/2)/lnL0
+
+#Question c:
+cp.age <- cutpointr(P3.pred, p.age, lowplasma, method = minimize_metric, metric = roc01)
+p1<-plot(cp.age)
+cp.background <- cutpointr(P3.pred, p.background, lowplasma, method = minimize_metric, metric = roc01)
+p2<-plot(cp.background)
+cp.diet <- cutpointr(P3.pred, p.diet, lowplasma, method = minimize_metric, metric = roc01)
+p3<-plot(cp.diet)
+cp.final <- cutpointr(P3.pred, p.final, lowplasma, method = minimize_metric, metric = roc01)
+p4<-plot(cp.final)
+
+

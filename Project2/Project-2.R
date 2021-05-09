@@ -2,6 +2,8 @@
 library(ggplot2)
 library(GGally)
 library(ggpubr)
+library(pROC)
+library(ResourceSelection)
 
 plasma <- read.delim("Data/plasma.txt")
 head(plasma)
@@ -414,3 +416,175 @@ AIC.list$loglikelihoods<-c(logLik(AICintermediate.model)[1],
 (exp(BetaFinal.lm[,c(1,5,6)]))
 
 #Part 3:
+#Question a:
+P3.pred<-cbind(PositivePlasma,
+               p.age=predict(age.model, type="response"),
+               p.background=predict(background.model, type="response"),
+               p.diet=predict(diet.model, type="response"),
+               p.final=predict(AICintermediate.model, type="response"))
+
+
+P3.pred$yhat.age <- as.numeric(P3.pred$p.age > 0.5)
+P3.pred$yhat.background <- as.numeric(P3.pred$p.background > 0.5)
+P3.pred$yhat.diet <- as.numeric(P3.pred$p.diet > 0.5)
+P3.pred$yhat.final <- as.numeric(P3.pred$p.final > 0.5)
+
+row.01 <- table(P3.pred$lowplasma)
+#Age: Manual entry due to no p<0.5
+(col.01.age <- table(P3.pred$yhat.age))
+(confusion.age <- table(P3.pred$lowplasma, P3.pred$yhat.age))
+(spec.age <- 0 / row.01[1])
+(sens.age <- confusion.age[2, 1] / row.01[2])
+(accu.age <- confusion.age[2, 1] / sum(confusion.age))
+(prec.age <- confusion.age[2, 1] / col.01.age[1])
+
+#Background
+(col.01.background <- table(P3.pred$yhat.background))
+(confusion.background <- table(P3.pred$lowplasma, P3.pred$yhat.background))
+(spec.background <- confusion.background[1, 1] / row.01[1])
+(sens.background <- confusion.background[2, 2] / row.01[2])
+(accu.background <- sum(diag(confusion.background)) / sum(confusion.background))
+(prec.background <- confusion.background[2, 2] / col.01.background[2])
+
+#Diet
+(col.01.diet <- table(P3.pred$yhat.diet))
+(confusion.diet <- table(P3.pred$lowplasma, P3.pred$yhat.diet))
+(spec.diet <- confusion.diet[1, 1] / row.01[1])
+(sens.diet <- confusion.diet[2, 2] / row.01[2])
+(accu.diet <- sum(diag(confusion.diet)) / sum(confusion.diet))
+(prec.diet <- confusion.diet[2, 2] / col.01.diet[2])
+
+#Final
+(col.01.final <- table(P3.pred$yhat.final))
+(confusion.final <- table(P3.pred$lowplasma, P3.pred$yhat.final))
+(spec.final <- confusion.final[1, 1] / row.01[1])
+(sens.final <- confusion.final[2, 2] / row.01[2])
+(accu.final <- sum(diag(confusion.final)) / sum(confusion.final))
+(prec.final <- confusion.final[2, 2] / col.01.final[2])
+
+#Question b
+# ROC-curves for all models####
+roc.age <- roc(lowplasma ~ p.age, data = P3.pred)
+roc.df.age <- coords(roc.age, transpose = FALSE)
+roc.df.age$model <- "Age"
+roc.background <- roc(lowplasma ~ p.background, data = P3.pred)
+roc.df.background <- coords(roc.background, transpose = FALSE)
+roc.df.background$model <- "Background"
+roc.diet <- roc(lowplasma ~ p.diet, data = P3.pred)
+roc.df.diet <- coords(roc.diet, transpose = FALSE)
+roc.df.diet$model <- "Diet"
+roc.final <- roc(lowplasma ~ p.final, data = P3.pred)
+roc.df.final <- coords(roc.final, transpose = FALSE)
+roc.df.final$model <- "Final"
+
+
+roc.df <- rbind(roc.df.age, roc.df.background, roc.df.diet, 
+                roc.df.final)
+
+# Plot all the curves, in different colors:
+ggplot(roc.df, aes(specificity, sensitivity,
+                   color = model)) +
+  geom_path(size = 1) +
+  coord_fixed() +       # square plotting area
+  scale_x_reverse() +   # Reverse scale on the x-axis!
+  labs(caption = "ROC-curves for all the models") +
+  theme(text = element_text(size = 14))
+
+#Collect AUC and intervals for all the models:
+(aucs <- 
+    data.frame(
+      model = c("Age", "Background", "Diet", "Final"),
+      auc = c(auc(roc.age), auc(roc.background), auc(roc.diet), auc(roc.final)),
+      lwr = c(ci(roc.age)[1], ci(roc.background)[1],
+              ci(roc.diet)[1], ci(roc.final)[1]),
+      upr = c(ci(roc.age)[3], ci(roc.background)[3],
+              ci(roc.diet)[3], ci(roc.final)[3])))
+
+# Compare the AUC for the models:
+roc.test(roc.age, roc.background)
+roc.test(roc.age, roc.diet)
+roc.test(roc.age, roc.final)
+roc.test(roc.background, roc.diet)
+roc.test(roc.background, roc.final)
+roc.test(roc.diet, roc.final)
+
+#Question c: Look at modules for a simpler more visual method using the cutpointr package, consider using the plots 
+#from there to discuss the best threshold points.
+MaxSpSe.idx<-c(which.min(sqrt(roc.df.age$specificity^2+roc.df.age$sensitivity^2)),
+               which.min(sqrt(roc.df.background$specificity^2+roc.df.background$sensitivity^2)),
+               which.min(sqrt(roc.df.diet$specificity^2+roc.df.diet$sensitivity^2)),
+               which.min(sqrt(roc.df.final$specificity^2+roc.df.final$sensitivity^2)))
+
+thresh.age<-roc.df.age$threshold[MaxSpSe.idx[1]]
+thresh.background<-roc.df.background$threshold[MaxSpSe.idx[2]]
+thresh.diet<-roc.df.diet$threshold[MaxSpSe.idx[3]]
+thresh.final<-roc.df.final$threshold[MaxSpSe.idx[4]]
+
+P3.pred$ydhat.age <- as.numeric(P3.pred$p.age > thresh.age)
+P3.pred$ydhat.background <- as.numeric(P3.pred$p.background > thresh.background)
+P3.pred$ydhat.diet <- as.numeric(P3.pred$p.diet > thresh.diet)
+P3.pred$ydhat.final <- as.numeric(P3.pred$p.final > thresh.final)
+
+#Age: Manual entry due to no p<0.5
+(col.02.age <- table(P3.pred$ydhat.age))
+(confusiond.age <- table(P3.pred$lowplasma, P3.pred$ydhat.age))
+(spec.age <- confusiond.age[1, 1] / row.01[1])
+(sens.age <- confusiond.age[2, 2] / row.01[2])
+(accu.age <- sum(diag(confusiond.age)) / sum(confusiond.age))
+(prec.age <- confusiond.age[2, 2] / col.02.age[2])
+
+#Background
+(col.02.background <- table(P3.pred$ydhat.background))
+(confusiond.background <- table(P3.pred$lowplasma, P3.pred$ydhat.background))
+(spec.background <- confusiond.background[1, 1] / row.01[1])
+(sens.background <- confusiond.background[2, 2] / row.01[2])
+(accu.background <- sum(diag(confusiond.background)) / sum(confusiond.background))
+(prec.background <- confusiond.background[2, 2] / col.02.background[2])
+
+#Diet
+(col.02.diet <- table(P3.pred$ydhat.diet))
+(confusiond.diet <- table(P3.pred$lowplasma, P3.pred$ydhat.diet))
+(spec.diet <- confusiond.diet[1, 1] / row.01[1])
+(sens.diet <- confusiond.diet[2, 2] / row.01[2])
+(accu.diet <- sum(diag(confusiond.diet)) / sum(confusiond.diet))
+(prec.diet <- confusiond.diet[2, 2] / col.02.diet[2])
+
+#Final
+(col.02.final <- table(P3.pred$ydhat.final))
+(confusiond.final <- table(P3.pred$lowplasma, P3.pred$ydhat.final))
+(spec.final <- confusiond.final[1, 1] / row.01[1])
+(sens.final <- confusiond.final[2, 2] / row.01[2])
+(accu.final <- sum(diag(confusiond.final)) / sum(confusiond.final))
+(prec.final <- confusiond.final[2, 2] / col.02.final[2])
+
+#Question d:
+# HL using hoslem.test####
+Model.list<-list(age.model, background.model, diet.model, AICintermediate.model)
+Model.names<-c("Age", "Background", "Dietary", "Final" )
+P3.sort<-P3.pred[order(P3.pred[I(16+1)]), ]
+HL<-hoslem.test(P3.pred$lowplasma, P3.pred[17], g = git)
+for(i in 1:4){
+  exp<-20 #Completely arbitrary number >5
+  git<-length(Model.list[[i]]$coefficients)+1
+  while(exp>5){
+    HL<-hoslem.test(P3.pred$lowplasma, P3.sort[, I(16+i)], g = git)
+    exp=min(HL$expected)
+    print(sprintf("Smallest expected number in a group of %s model for g=%i is %f", Model.names[i], git, exp))
+    HL.df <- data.frame(group = seq(1, git),
+                        Obs0 = HL$observed[, 1],
+                        Obs1 = HL$observed[, 2],
+                        Exp0 = HL$expected[, 1],
+                        Exp1 = HL$expected[, 2])
+    
+    print(ggplot(HL.df, aes(x = group)) +
+      geom_line(aes(y = Obs0, linetype = "observed", color = "Y = 0"), size = 1) +
+      geom_line(aes(y = Obs1, linetype = "observed", color = "Y = 1"), size = 1) +
+      geom_line(aes(y = Exp0, linetype = "expected", color = "Y = 0"), size = 1) +
+      geom_line(aes(y = Exp1, linetype = "expected", color = "Y = 1"), size = 1) +
+      labs(title = sprintf("%s Model: Observed and expected in each group", Model.names[i]),
+           y = "number of observations") +
+      scale_x_continuous(breaks = seq(1, 11)) +
+      theme(text = element_text(size = 14)))
+    git=git+1
+  }
+}
