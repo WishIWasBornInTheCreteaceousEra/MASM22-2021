@@ -592,7 +592,7 @@ for(i in 1:4){
            y = "number of observations") +
       scale_x_continuous(breaks = seq(1, 11)) +
       theme(text = element_text(size = 14))
-    #ggsave(sprintf("HLT %s%i.svg", Model.names[i], git))
+    ggsave(sprintf("HLT%s%i.svg", Model.names[i], git))
     git=git+1
   }
 }
