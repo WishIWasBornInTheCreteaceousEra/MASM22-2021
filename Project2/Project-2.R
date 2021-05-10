@@ -510,10 +510,10 @@ roc.test(roc.diet, roc.final)
 
 #Question c: Look at modules for a simpler more visual method using the cutpointr package, consider using the plots 
 #from there to discuss the best threshold points.
-MaxSpSe.idx<-c(which.min(sqrt(roc.df.age$specificity^2+roc.df.age$sensitivity^2)),
-               which.min(sqrt(roc.df.background$specificity^2+roc.df.background$sensitivity^2)),
-               which.min(sqrt(roc.df.diet$specificity^2+roc.df.diet$sensitivity^2)),
-               which.min(sqrt(roc.df.final$specificity^2+roc.df.final$sensitivity^2)))
+MaxSpSe.idx<-c(which.min(sqrt((1-roc.df.age$specificity)^2+(1-roc.df.age$sensitivity)^2)),
+               which.min(sqrt((1-roc.df.background$specificity)^2+(1-roc.df.background$sensitivity)^2)),
+               which.min(sqrt((1-roc.df.diet$specificity)^2+(1-roc.df.diet$sensitivity)^2)),
+               which.min(sqrt((1-roc.df.final$specificity)^2+(1-roc.df.final$sensitivity)^2)))
 
 thresh.age<-roc.df.age$threshold[MaxSpSe.idx[1]]
 thresh.background<-roc.df.background$threshold[MaxSpSe.idx[2]]
@@ -528,55 +528,62 @@ P3.pred$ydhat.final <- as.numeric(P3.pred$p.final > thresh.final)
 #Age: Manual entry due to no p<0.5
 (col.02.age <- table(P3.pred$ydhat.age))
 (confusiond.age <- table(P3.pred$lowplasma, P3.pred$ydhat.age))
-(spec.age <- confusiond.age[1, 1] / row.01[1])
-(sens.age <- confusiond.age[2, 2] / row.01[2])
-(accu.age <- sum(diag(confusiond.age)) / sum(confusiond.age))
-(prec.age <- confusiond.age[2, 2] / col.02.age[2])
+(specd.age <- confusiond.age[1, 1] / row.01[1])
+(sensd.age <- confusiond.age[2, 2] / row.01[2])
+(accud.age <- sum(diag(confusiond.age)) / sum(confusiond.age))
+(precd.age <- confusiond.age[2, 2] / col.02.age[2])
 
 #Background
 (col.02.background <- table(P3.pred$ydhat.background))
 (confusiond.background <- table(P3.pred$lowplasma, P3.pred$ydhat.background))
-(spec.background <- confusiond.background[1, 1] / row.01[1])
-(sens.background <- confusiond.background[2, 2] / row.01[2])
-(accu.background <- sum(diag(confusiond.background)) / sum(confusiond.background))
-(prec.background <- confusiond.background[2, 2] / col.02.background[2])
+(specd.background <- confusiond.background[1, 1] / row.01[1])
+(sensd.background <- confusiond.background[2, 2] / row.01[2])
+(accud.background <- sum(diag(confusiond.background)) / sum(confusiond.background))
+(precd.background <- confusiond.background[2, 2] / col.02.background[2])
 
 #Diet
 (col.02.diet <- table(P3.pred$ydhat.diet))
 (confusiond.diet <- table(P3.pred$lowplasma, P3.pred$ydhat.diet))
-(spec.diet <- confusiond.diet[1, 1] / row.01[1])
-(sens.diet <- confusiond.diet[2, 2] / row.01[2])
-(accu.diet <- sum(diag(confusiond.diet)) / sum(confusiond.diet))
-(prec.diet <- confusiond.diet[2, 2] / col.02.diet[2])
+(specd.diet <- confusiond.diet[1, 1] / row.01[1])
+(sensd.diet <- confusiond.diet[2, 2] / row.01[2])
+(accud.diet <- sum(diag(confusiond.diet)) / sum(confusiond.diet))
+(precd.diet <- confusiond.diet[2, 2] / col.02.diet[2])
 
 #Final
 (col.02.final <- table(P3.pred$ydhat.final))
 (confusiond.final <- table(P3.pred$lowplasma, P3.pred$ydhat.final))
-(spec.final <- confusiond.final[1, 1] / row.01[1])
-(sens.final <- confusiond.final[2, 2] / row.01[2])
-(accu.final <- sum(diag(confusiond.final)) / sum(confusiond.final))
-(prec.final <- confusiond.final[2, 2] / col.02.final[2])
+(specd.final <- confusiond.final[1, 1] / row.01[1])
+(sensd.final <- confusiond.final[2, 2] / row.01[2])
+(accud.final <- sum(diag(confusiond.final)) / sum(confusiond.final))
+(precd.final <- confusiond.final[2, 2] / col.02.final[2])
 
 #Question d:
 # HL using hoslem.test####
 Model.list<-list(age.model, background.model, diet.model, AICintermediate.model)
 Model.names<-c("Age", "Background", "Dietary", "Final" )
-P3.sort<-P3.pred[order(P3.pred[I(16+1)]), ]
-HL<-hoslem.test(P3.pred$lowplasma, P3.pred[17], g = git)
 for(i in 1:4){
   exp<-20 #Completely arbitrary number >5
   git<-length(Model.list[[i]]$coefficients)+1
+  P3.sort<-P3.pred[order(P3.pred[I(16+i)]), ]
   while(exp>5){
     HL<-hoslem.test(P3.pred$lowplasma, P3.sort[, I(16+i)], g = git)
     exp=min(HL$expected)
+    chisq=qchisq(1 - 0.05, git - 2)
     print(sprintf("Smallest expected number in a group of %s model for g=%i is %f", Model.names[i], git, exp))
+    if(chisq<HL[1]){
+      print(sprintf("The Chi-sq value at a significance of .05 is %f, and chi-sq of the HL test is %f so we REJECT", chisq, HL[[1]]))
+    }
+    else{
+      print(sprintf("The Chi-sq value at a significance of .05 is %f, and chi-sq of the HL test is %f so we ACCEPT", chisq, HL[[1]]))
+    }
+
     HL.df <- data.frame(group = seq(1, git),
                         Obs0 = HL$observed[, 1],
                         Obs1 = HL$observed[, 2],
                         Exp0 = HL$expected[, 1],
                         Exp1 = HL$expected[, 2])
     
-    print(ggplot(HL.df, aes(x = group)) +
+    ggplot(HL.df, aes(x = group)) +
       geom_line(aes(y = Obs0, linetype = "observed", color = "Y = 0"), size = 1) +
       geom_line(aes(y = Obs1, linetype = "observed", color = "Y = 1"), size = 1) +
       geom_line(aes(y = Exp0, linetype = "expected", color = "Y = 0"), size = 1) +
@@ -584,7 +591,8 @@ for(i in 1:4){
       labs(title = sprintf("%s Model: Observed and expected in each group", Model.names[i]),
            y = "number of observations") +
       scale_x_continuous(breaks = seq(1, 11)) +
-      theme(text = element_text(size = 14)))
+      theme(text = element_text(size = 14))
+    #ggsave(sprintf("HLT %s%i.svg", Model.names[i], git))
     git=git+1
   }
 }
