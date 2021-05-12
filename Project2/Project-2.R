@@ -414,6 +414,7 @@ AIC.list$loglikelihoods<-c(logLik(AICintermediate.model)[1],
 
 (BetaFinal.lm <- cbind(summary(AICintermediate.model)$coefficients,ci =confint(AICintermediate.model)))
 (exp(BetaFinal.lm[,c(1,5,6)]))
+final.model <-AICintermediate.model
 
 #Part 3:
 #Question a:
@@ -605,12 +606,12 @@ pred.sort <- P3.pred[order(P3.pred$p.age), ]
 length(age.model$coefficients)
 # so we need g > 2
 # while the smallest expected value is at least approx 5:
-# Allowing 4 here and have experimented with g:
-(HL.age <- hoslem.test(pred.sort$lowplasma, pred.sort$p.age, g = 7))
+G <-8
+(HL.age <- hoslem.test(pred.sort$lowplasma, pred.sort$p.age, g = G))
 HL.age$expected
 
 # Collect the data in a useful form for plotting:
-(HL.df.age <- data.frame(group = seq(1, 7),
+(HL.df.age <- data.frame(group = seq(1, G),
                        Obs0 = HL.age$observed[, 1],
                        Obs1 = HL.age$observed[, 2],
                        Exp0 = HL.age$expected[, 1],
@@ -621,7 +622,91 @@ ggplot(HL.df.age, aes(x = group)) +
   geom_line(aes(y = Obs1, linetype = "observed", color = "Y = 1"), size = 1) +
   geom_line(aes(y = Exp0, linetype = "expected", color = "Y = 0"), size = 1) +
   geom_line(aes(y = Exp1, linetype = "expected", color = "Y = 1"), size = 1) +
-  labs(title = "Model 3: Observed and expected in each group",
-       y = "number of observations") +
+  labs(y = "number of observations") +
+  scale_x_continuous(breaks = seq(1, 11)) +
+  theme(text = element_text(size = 14))
+
+
+#Background:
+pred.sort <- P3.pred[order(P3.pred$p.background), ]
+# HL using hoslem.test####
+# p+1:
+length(background.model$coefficients)
+# so we need g > 5
+# while the smallest expected value is at least approx 5:
+G <-6
+(HL.background <- hoslem.test(pred.sort$lowplasma, pred.sort$p.background, g = G))
+HL.background$expected
+
+# Collect the data in a useful form for plotting:
+(HL.df.background <- data.frame(group = seq(1, G),
+                         Obs0 = HL.background$observed[, 1],
+                         Obs1 = HL.background$observed[, 2],
+                         Exp0 = HL.background$expected[, 1],
+                         Exp1 = HL.background$expected[, 2]))
+
+ggplot(HL.df.background, aes(x = group)) +
+  geom_line(aes(y = Obs0, linetype = "observed", color = "Y = 0"), size = 1) +
+  geom_line(aes(y = Obs1, linetype = "observed", color = "Y = 1"), size = 1) +
+  geom_line(aes(y = Exp0, linetype = "expected", color = "Y = 0"), size = 1) +
+  geom_line(aes(y = Exp1, linetype = "expected", color = "Y = 1"), size = 1) +
+  labs(y = "number of observations") +
+  scale_x_continuous(breaks = seq(1, 11)) +
+  theme(text = element_text(size = 14))
+
+
+
+#Diet:
+pred.sort <- P3.pred[order(P3.pred$p.diet), ]
+# HL using hoslem.test####
+# p+1:
+length(diet.model$coefficients)
+# so we need g > 6
+# while the smallest expected value is at least approx 5:
+G <-7
+(HL.diet <- hoslem.test(pred.sort$lowplasma, pred.sort$p.diet, g = G))
+HL.diet$expected
+
+# Collect the data in a useful form for plotting:
+(HL.df.diet <- data.frame(group = seq(1, G),
+                                Obs0 = HL.diet$observed[, 1],
+                                Obs1 = HL.diet$observed[, 2],
+                                Exp0 = HL.diet$expected[, 1],
+                                Exp1 = HL.diet$expected[, 2]))
+
+ggplot(HL.df.diet, aes(x = group)) +
+  geom_line(aes(y = Obs0, linetype = "observed", color = "Y = 0"), size = 1) +
+  geom_line(aes(y = Obs1, linetype = "observed", color = "Y = 1"), size = 1) +
+  geom_line(aes(y = Exp0, linetype = "expected", color = "Y = 0"), size = 1) +
+  geom_line(aes(y = Exp1, linetype = "expected", color = "Y = 1"), size = 1) +
+  labs(y = "number of observations") +
+  scale_x_continuous(breaks = seq(1, 11)) +
+  theme(text = element_text(size = 14))
+
+
+#Final:
+pred.sort <- P3.pred[order(P3.pred$p.final), ]
+# HL using hoslem.test####
+# p+1:
+length(final.model$coefficients)
+# so we need g > 6
+# while the smallest expected value is at least approx 5:
+G <-13
+(HL.final <- hoslem.test(pred.sort$lowplasma, pred.sort$p.final, g = G))
+HL.final$expected
+
+# Collect the data in a useful form for plotting:
+(HL.df.final <- data.frame(group = seq(1, G),
+                          Obs0 = HL.final$observed[, 1],
+                          Obs1 = HL.final$observed[, 2],
+                          Exp0 = HL.final$expected[, 1],
+                          Exp1 = HL.final$expected[, 2]))
+
+ggplot(HL.df.final, aes(x = group)) +
+  geom_line(aes(y = Obs0, linetype = "observed", color = "Y = 0"), size = 1) +
+  geom_line(aes(y = Obs1, linetype = "observed", color = "Y = 1"), size = 1) +
+  geom_line(aes(y = Exp0, linetype = "expected", color = "Y = 0"), size = 1) +
+  geom_line(aes(y = Exp1, linetype = "expected", color = "Y = 1"), size = 1) +
+  labs(y = "number of observations") +
   scale_x_continuous(breaks = seq(1, 11)) +
   theme(text = element_text(size = 14))
