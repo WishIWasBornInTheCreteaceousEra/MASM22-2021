@@ -557,42 +557,71 @@ P3.pred$ydhat.final <- as.numeric(P3.pred$p.final > thresh.final)
 (accud.final <- sum(diag(confusiond.final)) / sum(confusiond.final))
 (precd.final <- confusiond.final[2, 2] / col.02.final[2])
 
-#Question d:
-# HL using hoslem.test####
-Model.list<-list(age.model, background.model, diet.model, AICintermediate.model)
-Model.names<-c("Age", "Background", "Dietary", "Final" )
-for(i in 1:4){
-  exp<-20 #Completely arbitrary number >5
-  git<-length(Model.list[[i]]$coefficients)+1
-  P3.sort<-P3.pred[order(P3.pred[I(16+i)]), ]
-  while(exp>5){
-    HL<-hoslem.test(P3.pred$lowplasma, P3.sort[, I(16+i)], g = git)
-    exp=min(HL$expected)
-    chisq=qchisq(1 - 0.05, git - 2)
-    print(sprintf("Smallest expected number in a group of %s model for g=%i is %f", Model.names[i], git, exp))
-    if(chisq<HL[1]){
-      print(sprintf("The Chi-sq value at a significance of .05 is %f, and chi-sq of the HL test is %f so we REJECT", chisq, HL[[1]]))
-    }
-    else{
-      print(sprintf("The Chi-sq value at a significance of .05 is %f, and chi-sq of the HL test is %f so we ACCEPT", chisq, HL[[1]]))
-    }
+# #Question d:
+# # HL using hoslem.test####
+# Model.list<-list(age.model, background.model, diet.model, AICintermediate.model)
+# Model.names<-c("Age", "Background", "Dietary", "Final" )
+# for(i in 1:4){
+#   exp<-20 #Completely arbitrary number >5
+#   git<-length(Model.list[[i]]$coefficients)+1
+#   P3.sort<-P3.pred[order(P3.pred[I(16+i)]), ]
+#   while(exp>5){
+#     HL<-hoslem.test(P3.pred$lowplasma, P3.sort[, I(16+i)], g = git)
+#     exp=min(HL$expected)
+#     chisq=qchisq(1 - 0.05, git - 2)
+#     print(sprintf("Smallest expected number in a group of %s model for g=%i is %f", Model.names[i], git, exp))
+#     if(chisq<HL[1]){
+#       print(sprintf("The Chi-sq value at a significance of .05 is %f, and chi-sq of the HL test is %f so we REJECT", chisq, HL[[1]]))
+#     }
+#     else{
+#       print(sprintf("The Chi-sq value at a significance of .05 is %f, and chi-sq of the HL test is %f so we ACCEPT", chisq, HL[[1]]))
+#     }
+# 
+#     HL.df <- data.frame(group = seq(1, git),
+#                         Obs0 = HL$observed[, 1],
+#                         Obs1 = HL$observed[, 2],
+#                         Exp0 = HL$expected[, 1],
+#                         Exp1 = HL$expected[, 2])
+#     
+#     ggplot(HL.df, aes(x = group)) +
+#       geom_line(aes(y = Obs0, linetype = "observed", color = "Y = 0"), size = 1) +
+#       geom_line(aes(y = Obs1, linetype = "observed", color = "Y = 1"), size = 1) +
+#       geom_line(aes(y = Exp0, linetype = "expected", color = "Y = 0"), size = 1) +
+#       geom_line(aes(y = Exp1, linetype = "expected", color = "Y = 1"), size = 1) +
+#       labs(title = sprintf("%s Model: Observed and expected in each group", Model.names[i]),
+#            y = "number of observations") +
+#       scale_x_continuous(breaks = seq(1, 11)) +
+#       theme(text = element_text(size = 14))
+#     ggsave(sprintf("HLT%s%i.svg", Model.names[i], git))
+#     git=git+1
+#   }
+# }
 
-    HL.df <- data.frame(group = seq(1, git),
-                        Obs0 = HL$observed[, 1],
-                        Obs1 = HL$observed[, 2],
-                        Exp0 = HL$expected[, 1],
-                        Exp1 = HL$expected[, 2])
-    
-    ggplot(HL.df, aes(x = group)) +
-      geom_line(aes(y = Obs0, linetype = "observed", color = "Y = 0"), size = 1) +
-      geom_line(aes(y = Obs1, linetype = "observed", color = "Y = 1"), size = 1) +
-      geom_line(aes(y = Exp0, linetype = "expected", color = "Y = 0"), size = 1) +
-      geom_line(aes(y = Exp1, linetype = "expected", color = "Y = 1"), size = 1) +
-      labs(title = sprintf("%s Model: Observed and expected in each group", Model.names[i]),
-           y = "number of observations") +
-      scale_x_continuous(breaks = seq(1, 11)) +
-      theme(text = element_text(size = 14))
-    ggsave(sprintf("HLT%s%i.svg", Model.names[i], git))
-    git=git+1
-  }
-}
+# Question 3d, André alternative
+#Age:
+pred.sort <- P3.pred[order(P3.pred$p.age), ]
+# HL using hoslem.test####
+# p+1:
+length(age.model$coefficients)
+# so we need g > 2
+# while the smallest expected value is at least approx 5:
+# Allowing 4 here and have experimented with g:
+(HL.age <- hoslem.test(pred.sort$lowplasma, pred.sort$p.age, g = 7))
+HL.age$expected
+
+# Collect the data in a useful form for plotting:
+(HL.df.age <- data.frame(group = seq(1, 7),
+                       Obs0 = HL.age$observed[, 1],
+                       Obs1 = HL.age$observed[, 2],
+                       Exp0 = HL.age$expected[, 1],
+                       Exp1 = HL.age$expected[, 2]))
+
+ggplot(HL.df.age, aes(x = group)) +
+  geom_line(aes(y = Obs0, linetype = "observed", color = "Y = 0"), size = 1) +
+  geom_line(aes(y = Obs1, linetype = "observed", color = "Y = 1"), size = 1) +
+  geom_line(aes(y = Exp0, linetype = "expected", color = "Y = 0"), size = 1) +
+  geom_line(aes(y = Exp1, linetype = "expected", color = "Y = 1"), size = 1) +
+  labs(title = "Model 3: Observed and expected in each group",
+       y = "number of observations") +
+  scale_x_continuous(breaks = seq(1, 11)) +
+  theme(text = element_text(size = 14))
