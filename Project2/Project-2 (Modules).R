@@ -57,9 +57,8 @@ round(100*collect.AIC[, c("R2McF", "R2McF.adj", "R2CS", "R2N")], digits = 1)
 
 #Question d:
 #Using a package to see if what we got makes sense
-PositivePlasma.Xy = PositivePlasma[,c(1,2,3,4,6,7,8,9,10,11,12,14)]
-bglm.AIC = bestglm(Xy = PositivePlasma.Xy, family = binomial, IC = "AIC", 
-                   method = "exhaustive")
+PositivePlasma.Xy = PositivePlasma[,c(1,2,3,4,6,7,8,9,10,11,12,15)]
+bglm.AIC = bestglm(Xy = PositivePlasma.Xy, family = binomial, IC = "AIC", method = "exhaustive")
 ans<-bglm.AIC$Subsets
 ans$df<-0.5*(ans$AIC+2*ans$logLikelihood)+1
 # calculate R2_McF,adj. We find that the largest R2 occurs at row 7 that is 6 variables; note that this isnt the
