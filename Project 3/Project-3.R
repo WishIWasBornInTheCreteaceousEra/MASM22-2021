@@ -3,8 +3,10 @@ library(ggplot2)
 library(GGally)
 library(ggpubr)
 library(pROC)
+library(multiROC)
 library(ResourceSelection)
 library(nnet)
+library(MASS)
 
 plasma <- read.delim("Data/plasma.txt")
 PositivePlasma <- plasma[plasma$betaplasma > 0, ]
@@ -38,9 +40,142 @@ PositivePlasma$plasmacat <- cut(PositivePlasma$betaplasma,
                                 labels=c("Very Low", "Low", "Moderately High", "High"))
 table(PositivePlasma$plasmacat)
 
+#Ordinal
+(Qmodel.0<-polr(plasmacat~1, data=PositivePlasma))
+(QMax.model <- polr(plasmacat ~ vituse+calories+fiber+alcohol+betadiet+fat+cholesterol+age+sex+smokstat+quetelet, data = PositivePlasma))
+#Backwards AIC: 809.1773   ~ vituse + calories + fiber + betadiet + age + sex + smokstat + quetelet
+QAICBIntermediate.model<-step(QMax.model, 
+                             scope = list(lower = Qmodel.0, upper = QMax.model),
+                             direction = "backward")
+#Backwards BIC: 814.6367  ~ vituse + betadiet + age + sex + quetelet
+QBICBIntermediate.model<-step(QMax.model, 
+                             scope = list(lower = Qmodel.0, upper = QMax.model),
+                             direction = "backward",
+                             k = log(nrow(PositivePlasma)))
+#Forward AIC: 808.7619 ~ quetelet + betadiet + vituse + age + smokstat + sex + fiber + fat
+QAICFIntermediate.model<-step(Qmodel.0, 
+                             scope = list(lower = Qmodel.0, upper = QMax.model),
+                             direction = "forward")
+#Forwards BIC: 814.6367 ~ quetelet + betadiet + age + vituse + sex
+QBICFIntermediate.model<-step(Qmodel.0, 
+                             scope = list(lower = Qmodel.0, upper = QMax.model),
+                             direction = "forward",
+                             k = log(nrow(PositivePlasma)))
+# AIC: 809.6859 , 809.488 , 811.6779 
+(nosmok.model <- polr(plasmacat ~ quetelet + betadiet + vituse + age + sex + fiber + fat, data = PositivePlasma))
+(nofat.model <- polr(plasmacat ~ quetelet + betadiet + vituse + age + smokstat + sex + fiber, data = PositivePlasma))
+(nofatnosmok.model <- polr(plasmacat ~ quetelet + betadiet + vituse + age + sex + fiber, data = PositivePlasma))
+#Based on our p-values the QAICFIntermediate.model outperforms these three models.
+anova(nofatnosmok.model, QAICFIntermediate.model)#p=.0304281
+anova(nofatnosmok.model, nosmok.model)#p=.045
+anova(nofatnosmok.model, nofat.model)#p=.045
+#anova(nofatnosmok.model, Qmodel.0)#p=2.36e-14
+
+#Tests
+anova(QBICFIntermediate.model, QAICFIntermediate.model)#AICF Better
+anova(QBICBIntermediate.model, QAICFIntermediate.model)#AICF Better
+anova(QAICBIntermediate.model, QAICFIntermediate.model)#AICB Better!!
+
+
+Qmodel.final<-QAICFIntermediate.model
+Qsum.final<-summary(Qmodel.final)
+Qparam.final<-cbind(beta = Qmodel.final$coefficients, 
+      expbeta = exp(Qmodel.final$coefficients),
+      exp(confint(Qmodel.final)),
+      zeta = Qmodel.final$zeta, 
+      expzeta = exp(Qmodel.final$zeta))
+
+y0 <- data.frame(quetelet = rep(seq(16.33114, 50.40333), 2))
+y0$vituse <- "Yes, fairly often"
+y0$age<- mean(PositivePlasma$age)
+y0$fiber<- mean(PositivePlasma$fiber)
+y0$betadiet<- mean(PositivePlasma$betadiet)
+y0$fat<-mean(PositivePlasma$fat)
+y0$smokstat<-"Never"
+y0$sex <- c(rep("Male", 50.40333 - 16.33114 + 1), 
+            rep("Female", 50.40333 - 16.33114 + 1))
+
+x00<-data.frame(age = rep(seq(19, 83), 2))
+x00$vituse <- "Yes, fairly often"
+x00$quetelet<- mean(PositivePlasma$quetelet)
+x00$fiber<- mean(PositivePlasma$fiber)
+x00$betadiet<- mean(PositivePlasma$betadiet)
+x00$fat<-mean(PositivePlasma$fat)
+x00$smokstat<-"Never"
+x00$sex <- c(rep("Male", 83 - 19 + 1), 
+            rep("Female", 83 - 19 + 1))
+
+QFinal.pred <- cbind(
+  x00,
+  predict(Qmodel.final, newdata = x00, type = "prob"),
+  yhat = predict(Qmodel.final, newdata = x00))
+QQFinal.pred <- cbind(
+  y0,
+  predict(Qmodel.final, newdata = y0, type = "prob"),
+  yhat = predict(Qmodel.final, newdata = y0))
+
+(OrdinalQuetelet.plot<-ggplot(QQFinal.pred, aes(x=quetelet))+
+    geom_line(aes(y = High, color = "High"), size = 2) +
+    geom_line(aes(y = `Moderately High`, color = "Moderately High"), size = 2) +
+    geom_line(aes(y = Low, color = "Low"), size = 2) +
+    geom_line(aes(y = `Very Low`, color = "Very Low"), size = 2) +
+    expand_limits(y = c(0, 1)) +
+    facet_grid(~sex) +
+    labs(title = "Ordinal: average patient with varying quetelet and sex",
+         y = "probability") +
+    theme(text = element_text(size = 14)))
+
+(OrdinalAge.plot<-ggplot(QFinal.pred, aes(x=age))+
+    geom_line(aes(y = High, color = "High"), size = 2) +
+    geom_line(aes(y = `Moderately High`, color = "Moderately High"), size = 2) +
+    geom_line(aes(y = Low, color = "Low"), size = 2) +
+    geom_line(aes(y = `Very Low`, color = "Very Low"), size = 2) +
+    expand_limits(y = c(0, 1)) +
+    facet_grid(~sex) +
+    labs(title = "Ordinal: average patient with varying ages and sex",
+         y = "probability") +
+    theme(text = element_text(size = 14)))
+
+
+# aic/bic, R2####
+# deviance
+Qmodel.final$deviance
+# total number of parameters (beta and zeta)
+Qmodel.final$edf
+
+Qinfo <- cbind(aic = AIC(Qmodel.0, QAICBIntermediate.model, Qmodel.final, QMax.model),
+              bic = BIC(Qmodel.0, QAICBIntermediate.model, Qmodel.final, QMax.model),
+              R2D = 100*c(0, 
+                          1 - QAICBIntermediate.model$deviance/Qmodel.0$deviance,
+                          1 - Qmodel.final$deviance/Qmodel.0$deviance,
+                          1 - QMax.model$deviance/model.null$deviance),
+              R2D.adj = 100*c(0, 
+                              1 - (QAICBIntermediate.model$deviance + QAICBIntermediate.model$edf - Qmodel.0$edf)/
+                                Qmodel.0$deviance, 
+                              1 - (Qmodel.final$deviance + Qmodel.final$edf - Qmodel.0$edf)/
+                                Qmodel.0$deviance,
+                              1 - (QMax.model$deviance + QMax.model$edf - Qmodel.0$edf)/
+                                Qmodel.0$deviance))
+round(Qinfo, digits = 1)
+
+
+#Confusion matrix####
+
+Qpred.final <- cbind(PositivePlasma,
+                    yhat = predict(Qmodel.final))
+(Qconf.matrix <- table(Qpred.final$plasmacat, Qpred.final$yhat))
+table(Qpred.final$plasmacat)
+table(Qpred.final$yhat)
+sum(Qconf.matrix)
+
+(Qsens <- 100*(diag(Qconf.matrix)/table(Qpred.final$plasmacat)))
+(Qprec <- 100*(diag(Qconf.matrix)/table(Qpred.final$yhat)))
+(Qacc <- 100*sum(diag(Qconf.matrix)/sum(Qconf.matrix)))
+
+
+
+#Multinomial
 (model.0 <- multinom(plasmacat ~ 1, data = PositivePlasma))
-(background.model <- multinom(plasmacat ~ age+sex+smokstat+quetelet, data = PositivePlasma))
-(dietary.model <- multinom(plasmacat ~ vituse+calories+fiber+alcohol+betadiet+fat+cholesterol, data = PositivePlasma))
 (Max.model <- multinom(plasmacat ~ vituse+calories+fiber+alcohol+betadiet+fat+cholesterol+age+sex+smokstat+quetelet, data = PositivePlasma))
 
 #Backwards AIC: 818.1562  ~ vituse + calories + fiber + betadiet + age + sex + quetelet
@@ -127,7 +262,6 @@ ci <- exp(confint(AICBIntermediate.model))
                round(ci[, , "High"], digits = 2)))
 
 x0 <- data.frame(age = rep(seq(19, 83), 2))
-# the same ses, socst and science for all:
 x0$vituse <- "Yes, fairly often"
 x0$calories<- mean(PositivePlasma$calories)
 x0$quetelet<- mean(PositivePlasma$quetelet)
@@ -159,10 +293,8 @@ table(pred.final$plasmacat)
 table(pred.final$yhat)
 
 (conf.final <- table(pred.final$plasmacat, pred.final$yhat))
-# Sensitivities:THIS NEEDS TO BE FIXED.
+# Sensitivities:
 (sens.final <-round(100*diag(conf.final)/table(pred.final$plasmacat), digits = 1))
-# Specificity:
-(spec.final <-round(100*diag(conf.final)/table(pred.final$plasmacat), digits = 1))
 # precision:
 (prec.final <-round(100*diag(conf.final)/table(pred.final$yhat), digits = 1))
 # accuracy:
