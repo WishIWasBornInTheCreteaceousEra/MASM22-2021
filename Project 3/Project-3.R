@@ -148,7 +148,7 @@ Qinfo <- cbind(aic = AIC(Qmodel.0, QAICBIntermediate.model, Qmodel.final, QMax.m
               R2D = 100*c(0, 
                           1 - QAICBIntermediate.model$deviance/Qmodel.0$deviance,
                           1 - Qmodel.final$deviance/Qmodel.0$deviance,
-                          1 - QMax.model$deviance/model.null$deviance),
+                          1 - QMax.model$deviance/Qmodel.0$deviance),
               R2D.adj = 100*c(0, 
                               1 - (QAICBIntermediate.model$deviance + QAICBIntermediate.model$edf - Qmodel.0$edf)/
                                 Qmodel.0$deviance, 
