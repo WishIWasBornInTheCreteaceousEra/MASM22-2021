@@ -267,9 +267,20 @@ x0$calories<- mean(PositivePlasma$calories)
 x0$quetelet<- mean(PositivePlasma$quetelet)
 x0$fiber<- mean(PositivePlasma$fiber)
 x0$betadiet<- mean(PositivePlasma$betadiet)
-
 x0$sex <- c(rep("Male", 83 - 19 + 1), 
                rep("Female", 83 - 19 + 1))
+
+b0 <- data.frame(quetelet = rep(seq(16.33114, 50.40333), 2))
+b0$vituse <- "Yes, fairly often"
+b0$calories<- mean(PositivePlasma$calories)
+b0$age<- mean(PositivePlasma$age)
+b0$fiber<- mean(PositivePlasma$fiber)
+b0$betadiet<- mean(PositivePlasma$betadiet)
+b0$sex <- c(rep("Male", 50.40333 - 16.33114 + 1), 
+            rep("Female", 50.40333 - 16.33114 + 1))
+Quet.pred<-cbind(b0,
+                 predict(AICBIntermediate.model, newdata=b0, type = "probs"))
+
 Final.pred <- cbind(x0,
                  predict(AICBIntermediate.model, newdata=x0, type = "probs"))
 
@@ -283,6 +294,17 @@ Final.pred <- cbind(x0,
   labs(title = "Multinomial: average patient with varying ages and sex",
        y = "probability") +
   theme(text = element_text(size = 14)))
+
+(Quet.plot<-ggplot(Quet.pred, aes(x=quetelet))+
+    geom_line(aes(y = High, color = "High"), size = 2) +
+    geom_line(aes(y = `Moderately High`, color = "Moderately High"), size = 2) +
+    geom_line(aes(y = Low, color = "Low"), size = 2) +
+    geom_line(aes(y = `Very Low`, color = "Very Low"), size = 2) +
+    expand_limits(y = c(0, 1)) +
+    facet_grid(~sex) +
+    labs(title = "Multinomial: average patient with varying quetelet and sex",
+         y = "probability") +
+    theme(text = element_text(size = 14)))
 
 (model.final <- multinom(plasmacat ~ vituse+calories+fiber+betadiet+age+sex+quetelet, data = PositivePlasma))
 pred.final <- cbind(PositivePlasma,
